@@ -16,7 +16,7 @@ class macedBaseSimulation extends Simulation {
     	.userAgentHeader("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:42.0) Gecko/20100101 Firefox/42.0")
 		.inferHtmlResources(BlackList(""".*\.js""", """.*\.css""", """.*\.gif""", """.*\.jpeg""", """.*\.jpg""", """.*\.ico""", """.*\.woff""", """.*\.(t|o)tf""", """.*\.png"""), WhiteList())
 
-	val headers_0 = Map("Accept" -> "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	//val headers_0 = Map("Accept" -> "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 
 	val headers_1 = Map("Accept" -> "*/*")
 
@@ -60,11 +60,12 @@ class macedBaseSimulation extends Simulation {
 	val scn = scenario("macedBaseSimulation")
 		.exec(http("request_home")
 			.get(uri1 + "/"))
-			//.headers(headers_0))
 		.pause(1)
 		.exec(http("request_getAWSCookies")
-			.get(uri3 + "/?dm=27bac6181890453140bce750f0370dbc&action=load&blogid=28&siteid=1&t=2019166540&back=http%3A%2F%2Fskillful-uat.macmillan.education%2F")
-			.headers(headers_1))
+			.get(uri3 + "/?dm=27bac6181890453140bce750f0370dbc&action=load&blogid=28&siteid=1&back=http%3A%2F%2Fskillful-uat.macmillan.education%2F")
+			.silent
+			.headers(headers_1)
+			)
 		.pause(1)
 		.exec(http("request_getSessionCookie")
 			.get("/index-xml.php?site_id=RDCv2&action=get_session_id_html&parenturl=http%3A%2F%2Fskillful-uat.macmillan.education%2F")
@@ -128,7 +129,8 @@ class macedBaseSimulation extends Simulation {
 			.resources
 			(
 				http("request_getAWSCookies")
-				.get(uri3 + "/?dm=27bac6181890453140bce750f0370dbc&action=load&blogid=28&siteid=1&t=4397098&back=http%3A%2F%2Fskillful-uat.macmillan.education%2Fresources%2F")
+				.get(uri3 + "/?dm=27bac6181890453140bce750f0370dbc&action=load&blogid=28&siteid=1&back=http%3A%2F%2Fskillful-uat.macmillan.education%2Fresources%2F")
+				.silent
 				.headers(headers_1)
 			)
 		)
@@ -160,6 +162,6 @@ class macedBaseSimulation extends Simulation {
 			)
 		)
 
-	//setUp(scn.inject(atOnceUsers(30))).protocols(httpProtocol)
-	setUp(scn.inject(splitUsers(50) into (rampUsers(10) over (1 seconds)) separatedBy(5 seconds))).protocols(httpProtocol)
+	setUp(scn.inject(atOnceUsers(1))).protocols(httpProtocol)
+	//setUp(scn.inject(splitUsers(50) into (rampUsers(10) over (1 seconds)) separatedBy(5 seconds))).protocols(httpProtocol)
 }
