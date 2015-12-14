@@ -16,10 +16,13 @@ class macedLoadSimulation extends Simulation {
     	.userAgentHeader("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:42.0) Gecko/20100101 Firefox/42.0")
 		.inferHtmlResources(BlackList(""".*\.js""", """.*\.css""", """.*\.gif""", """.*\.jpeg""", """.*\.jpg""", """.*\.ico""", """.*\.woff""", """.*\.(t|o)tf""", """.*\.png"""), WhiteList())
 
+	val minWait = 3 seconds
+	val maxWait = 10 seconds
+
 	object GoHome {
 		val goHome = exec(http("request_home")
 			.get(uri1 + "/"))
-			.pause(1)
+			.pause(minWait, maxWait)
 	}
 
 	object GetWSSessionCookie {
@@ -56,7 +59,7 @@ class macedLoadSimulation extends Simulation {
 			.formParam("SID", "${MEC_WS_SESSIONID}")
 			.formParam("callback", "MEC_webservices.WS_launch_fancybox")
 			)
-		.pause(5)
+		.pause(minWait, maxWait)
 	}
 
 	object SubmitLogin {
@@ -87,10 +90,9 @@ class macedLoadSimulation extends Simulation {
 			.withDomain("skillful-uat.macmillan.education")))
 		.exec(addCookie(Cookie("USERPASS", "${USERPASS}")
 			.withDomain("skillful-uat.macmillan.education")))
-		.pause(1)
 	}
 
-	object GoToResourcesPage {
+	/*object GoToResourcesPage {
 		val goToResourcesPage = repeat(3) {
 			exec(http("request_getResourcesPage")
 			.get(uri1 + "/resources/")
@@ -99,9 +101,45 @@ class macedLoadSimulation extends Simulation {
 		)
 		.pause(minWait, maxWait)
 		}
-	}
+	}*/
 
-	object GetResources {
+	object GoToResourcesPage {
+		
+		val goToResourcesPage = repeat(3) {
+			exec(http("request_getResourcesPage")
+			.get(uri1 + "/resources/")
+			.headers(headers_cookie)
+			.check(regex("""Your Resources"""))
+			)
+			.exec(http("request_getIdentity")
+			.post("/index-xml.php?site_id=RDCv2")
+			.headers(headers_NoCache)
+			.formParam("action", "is_valid_session_id")
+			.formParam("SID", "${MEC_WS_SESSIONID}")
+			.resources
+				(
+					http("request_getIdentity")
+					.post(uri4 + "?site_id=RDCv2")
+					.headers(headers_NoCache)
+					.formParam("action", "isloggedin")
+					.formParam("SID", "${MEC_WS_SESSIONID}"),
+		            http("request_getIdentity")
+					.post(uri4 + "?site_id=RDCv2")
+					.headers(headers_NoCache)
+					.formParam("action", "isloggedin")
+					.formParam("SID", "${MEC_WS_SESSIONID}"),
+		            http("request_getResources")
+					.options(uri2 + "/ResourceLinks/?")
+					.headers(headers_accessControl),
+		            http("request_getResources")
+					.get(uri2 + "/ResourceLinks/?")
+					.headers(headers_bearerAuth)
+					.check(regex("""L&S"""))
+				)
+			)
+		.pause(minWait, maxWait)
+		}
+
 		val getResources = repeat(3) {
 			exec(http("request_getIdentity")
 			.post("/index-xml.php?site_id=RDCv2")
@@ -175,26 +213,24 @@ class macedLoadSimulation extends Simulation {
 		.exec(SubmitLogin.submitLogin)
 		.exec(CreateSessionCookies.createSessionCookies)
 		.exec(GoToResourcesPage.goToResourcesPage)
-		.exec(GetResources.getResources)
+		//.exec(GetResources.getResources)
 
 	val viewResources = scenario("View Resources")
 		.exec(GetWSSessionCookie.getWSSessionCookie)
 		.exec(SubmitLogin.submitLogin)
 		.exec(CreateSessionCookies.createSessionCookies)
-		.exec(GetResources.getResources)
-
-	val minWait = 3 seconds
-	val maxWait = 10 seconds
+		.exec(GoToResourcesPage.goToResourcesPage)
+		//.exec(GetResources.getResources)
 
 
-	/*setUp(
+	setUp(
 		viewResources.inject(atOnceUsers(1)),
 		loginAndView.inject(atOnceUsers(1))
-		).protocols(httpProtocol)*/
-	setUp(
+		).protocols(httpProtocol)
+	/*setUp(
 		viewResources.inject(splitUsers(100) into (rampUsers(10) over (20 seconds)) separatedBy(5 seconds)),
 		loginAndView.inject(splitUsers(100) into (rampUsers(10) over (20 seconds)) separatedBy(5 seconds))
-		).protocols(httpProtocol)
+		).protocols(httpProtocol)*/
 	
 	//setUp(loginAndView.inject(splitUsers(100) into (rampUsers(10) over (5 seconds)) separatedBy(5 seconds))).protocols(httpProtocol)
 }
