@@ -91,16 +91,19 @@ class macedLoadSimulation extends Simulation {
 	}
 
 	object GoToResourcesPage {
-		val goToResourcesPage = exec(http("request_getResourcesPage")
+		val goToResourcesPage = repeat(3) {
+			exec(http("request_getResourcesPage")
 			.get(uri1 + "/resources/")
 			.headers(headers_cookie)
 			.check(regex("""Your Resources"""))
 		)
-		.pause(1)
+		.pause(minWait, maxWait)
+		}
 	}
 
 	object GetResources {
-		val getResources = exec(http("request_getIdentity")
+		val getResources = repeat(3) {
+			exec(http("request_getIdentity")
 			.post("/index-xml.php?site_id=RDCv2")
 			.headers(headers_NoCache)
 			.formParam("action", "is_valid_session_id")
@@ -126,7 +129,8 @@ class macedLoadSimulation extends Simulation {
 				.check(regex("""L&S"""))
 			)
 		)
-		.pause(1)
+		.pause(minWait, maxWait)
+		}
 	}
 
 
@@ -178,6 +182,9 @@ class macedLoadSimulation extends Simulation {
 		.exec(SubmitLogin.submitLogin)
 		.exec(CreateSessionCookies.createSessionCookies)
 		.exec(GetResources.getResources)
+
+	val minWait = 3 seconds
+	val maxWait = 10 seconds
 
 
 	/*setUp(
