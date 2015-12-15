@@ -16,29 +16,31 @@ class macedLoadSimulation extends Simulation {
     	.userAgentHeader("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:42.0) Gecko/20100101 Firefox/42.0")
 		.inferHtmlResources(BlackList(""".*\.js""", """.*\.css""", """.*\.gif""", """.*\.jpeg""", """.*\.jpg""", """.*\.ico""", """.*\.woff""", """.*\.(t|o)tf""", """.*\.png"""), WhiteList())
 
-	val minWait = 3 seconds
-	val maxWait = 10 seconds
+	val minWait = 3
+	val maxWait = 10
 
 	object GoHome {
-		val goHome = exec(http("request_home")
+		val goHome = group("Home") {
+			exec(http("Go to the Home Page")
 			.get(uri1 + "/"))
 			.pause(minWait, maxWait)
+		}
 	}
 
 	object GetWSSessionCookie {
-		val getWSSessionCookie = exec(http("request_getSessionCookie")
+		val getWSSessionCookie = exec(http("Get the WS Session Cookie")
 			.get("/index-xml.php?site_id=RDCv2&action=get_session_id_html&parenturl=http%3A%2F%2Fskillful-uat.macmillan.education%2F")
 			//.headers(headers_0)
 			.check(regex("""WS_sessionID=(.*)"""").saveAs("MEC_WS_SESSIONID"))
 			.resources
 			(
-				http("request_checkLoginStatus")
+				http("Initialise identity check")
 				.post(uri4 + "?site_id=RDCv2")
 				.headers(headers_NoCache)
 				.formParam("action", "isloggedin")
 				.formParam("SID", "${MEC_WS_SESSIONID}")
 				.formParam("second_callback", "WS_INIT"),
-	            http("request_checkLoginStatus")
+	            http("Validate identity")
 				.post(uri4 + "?site_id=RDCv2")
 				.headers(headers_NoCache)
 				.formParam("action", "isloggedin")
@@ -52,7 +54,7 @@ class macedLoadSimulation extends Simulation {
 	}
 
 	object ClickLogin {
-		val clickLogin = exec(http("request_getLoginForm")
+		val clickLogin = exec(http("Click on Login")
 			.post("/index-xml.php?site_id=RDCv2")
 			.headers(headers_NoCache)
 			.formParam("action", "get_standalone_login_html")
@@ -63,7 +65,7 @@ class macedLoadSimulation extends Simulation {
 	}
 
 	object SubmitLogin {
-		val submitLogin = exec(http("request_submitLoginDetails")
+		val submitLogin = exec(http("Submit Login Details")
 			.post("/index-xml.php?site_id=RDCv2")
 			.headers(headers_NoCache)
 			.formParam("username", "rshah")
@@ -73,112 +75,65 @@ class macedLoadSimulation extends Simulation {
 			.formParam("second_callback", "is_logged_in_hook")
 			.resources
 			(	
-				http("request_getSgkCookie")
+				http("Get SGK Cookie")
 				.get(uri4 + "?site_id=RDCv2&action=get_sgk_cookie&SID=${MEC_WS_SESSIONID}")
 				.headers(headers_acceptAll)
 				.check(regex(""""SGK_USERPASS":"(.*)",""").saveAs("USERPASS")),
-	            http("request_getMeeOAuthCookie")
+	            http("Get Mee OAuth Cookie")
 				.get(uri4 + "?site_id=RDCv2&action=get_MEE_OAUTH_cookie&SID=${MEC_WS_SESSIONID}")
 				.headers(headers_acceptAll)
 				.check(regex(""""MEE_OAUTH_token":"(.*)",""").saveAs("MEE_OAUTH"))
 			)
 		)
-	}
-
-	object CreateSessionCookies {
+		
 		val createSessionCookies = exec(addCookie(Cookie("MEE_OAUTH", "${MEE_OAUTH}")
 			.withDomain("skillful-uat.macmillan.education")))
 		.exec(addCookie(Cookie("USERPASS", "${USERPASS}")
 			.withDomain("skillful-uat.macmillan.education")))
 	}
 
-	/*object GoToResourcesPage {
-		val goToResourcesPage = repeat(3) {
-			exec(http("request_getResourcesPage")
-			.get(uri1 + "/resources/")
-			.headers(headers_cookie)
-			.check(regex("""Your Resources"""))
-		)
-		.pause(minWait, maxWait)
-		}
-	}*/
-
 	object GoToResourcesPage {
 		
-		val goToResourcesPage = repeat(3) {
-			exec(http("request_getResourcesPage")
-			.get(uri1 + "/resources/")
-			.headers(headers_cookie)
-			.check(regex("""Your Resources"""))
-			)
-			.exec(http("request_getIdentity")
-			.post("/index-xml.php?site_id=RDCv2")
-			.headers(headers_NoCache)
-			.formParam("action", "is_valid_session_id")
-			.formParam("SID", "${MEC_WS_SESSIONID}")
-			.resources
-				(
-					http("request_getIdentity")
-					.post(uri4 + "?site_id=RDCv2")
-					.headers(headers_NoCache)
-					.formParam("action", "isloggedin")
-					.formParam("SID", "${MEC_WS_SESSIONID}"),
-		            http("request_getIdentity")
-					.post(uri4 + "?site_id=RDCv2")
-					.headers(headers_NoCache)
-					.formParam("action", "isloggedin")
-					.formParam("SID", "${MEC_WS_SESSIONID}"),
-		            http("request_getResources")
-					.options(uri2 + "/ResourceLinks/?")
-					.headers(headers_accessControl),
-		            http("request_getResources")
-					.get(uri2 + "/ResourceLinks/?")
-					.headers(headers_bearerAuth)
-					.check(regex("""L&S"""))
+		val goToResourcesPage = group("Go the Resources Page") {
+				repeat(3) {
+				exec(http("Go to the resources URL")
+				.get(uri1 + "/resources/")
+				.headers(headers_cookie)
+				.check(regex("""Your Resources"""))
 				)
-			)
-		.pause(minWait, maxWait)
-		}
-
-		val getResources = repeat(3) {
-			exec(http("request_getIdentity")
-			.post("/index-xml.php?site_id=RDCv2")
-			.headers(headers_NoCache)
-			.formParam("action", "is_valid_session_id")
-			.formParam("SID", "${MEC_WS_SESSIONID}")
-			.resources
-			(
-				http("request_getIdentity")
-				.post(uri4 + "?site_id=RDCv2")
+				.exec(http("Get resources based on Identity")
+				.post("/index-xml.php?site_id=RDCv2")
 				.headers(headers_NoCache)
-				.formParam("action", "isloggedin")
-				.formParam("SID", "${MEC_WS_SESSIONID}"),
-	            http("request_getIdentity")
-				.post(uri4 + "?site_id=RDCv2")
-				.headers(headers_NoCache)
-				.formParam("action", "isloggedin")
-				.formParam("SID", "${MEC_WS_SESSIONID}"),
-	            http("request_getResources")
-				.options(uri2 + "/ResourceLinks/?")
-				.headers(headers_accessControl),
-	            http("request_getResources")
-				.get(uri2 + "/ResourceLinks/?")
-				.headers(headers_bearerAuth)
-				.check(regex("""L&S"""))
-			)
-		)
-		.pause(minWait, maxWait)
+				.formParam("action", "is_valid_session_id")
+				.formParam("SID", "${MEC_WS_SESSIONID}")
+				.resources
+					(
+						http("Validate identity")
+						.post(uri4 + "?site_id=RDCv2")
+						.headers(headers_NoCache)
+						.formParam("action", "isloggedin")
+						.formParam("SID", "${MEC_WS_SESSIONID}"),
+			            http("Validate identity")
+						.post(uri4 + "?site_id=RDCv2")
+						.headers(headers_NoCache)
+						.formParam("action", "isloggedin")
+						.formParam("SID", "${MEC_WS_SESSIONID}"),
+			            http("Validate the resource links")
+						.options(uri2 + "/ResourceLinks/?")
+						.headers(headers_accessControl),
+			            http("Get the resource links")
+						.get(uri2 + "/ResourceLinks/?")
+						.headers(headers_bearerAuth)
+						.check(regex("""L&S"""))
+					)
+				)
+			.pause(minWait, maxWait)
+			}
 		}
 	}
 
 
 	val headers_acceptAll = Map("Accept" -> "*/*")
-
-	//val headers_acceptText = Map("Accept" -> "text/css,*/*;q=0.1")
-
-	//val headers_acceptFont = Map(
-	//	"Accept" -> "application/font-woff2;q=1.0,application/font-woff;q=0.9,*/*;q=0.8",
-	//	"Accept-Encoding" -> "identity")
 
 	val headers_NoCache = Map(
 		"Cache-Control" -> "no-cache",
@@ -186,7 +141,6 @@ class macedLoadSimulation extends Simulation {
 		"Pragma" -> "no-cache")
 
 	val headers_accessControl = Map(
-		//"Accept" -> "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 		"Access-Control-Request-Headers" -> "authorization",
 		"Access-Control-Request-Method" -> "GET",
 		"Origin" -> "http://skillful-uat.macmillan.education")
@@ -211,26 +165,26 @@ class macedLoadSimulation extends Simulation {
 		.exec(GetWSSessionCookie.getWSSessionCookie)
 		.exec(ClickLogin.clickLogin)
 		.exec(SubmitLogin.submitLogin)
-		.exec(CreateSessionCookies.createSessionCookies)
+		.exec(SubmitLogin.createSessionCookies)
 		.exec(GoToResourcesPage.goToResourcesPage)
-		//.exec(GetResources.getResources)
+		//.exec(GoToResourcesPage.getResources)
 
 	val viewResources = scenario("View Resources")
 		.exec(GetWSSessionCookie.getWSSessionCookie)
 		.exec(SubmitLogin.submitLogin)
-		.exec(CreateSessionCookies.createSessionCookies)
+		.exec(SubmitLogin.createSessionCookies)
 		.exec(GoToResourcesPage.goToResourcesPage)
-		//.exec(GetResources.getResources)
+		//.exec(GoToResourcesPage.getResources)
 
 
-	setUp(
-		viewResources.inject(atOnceUsers(1)),
-		loginAndView.inject(atOnceUsers(1))
-		).protocols(httpProtocol)
 	/*setUp(
-		viewResources.inject(splitUsers(100) into (rampUsers(10) over (20 seconds)) separatedBy(5 seconds)),
-		loginAndView.inject(splitUsers(100) into (rampUsers(10) over (20 seconds)) separatedBy(5 seconds))
+		viewResources.inject(atOnceUsers(3)),
+		loginAndView.inject(atOnceUsers(3))
 		).protocols(httpProtocol)*/
+	setUp(
+		viewResources.inject(splitUsers(200) into (rampUsers(15) over (5 seconds)) separatedBy(20 seconds)),
+		loginAndView.inject(splitUsers(100) into (rampUsers(10) over (5 seconds)) separatedBy(10 seconds))
+		).protocols(httpProtocol)
 	
 	//setUp(loginAndView.inject(splitUsers(100) into (rampUsers(10) over (5 seconds)) separatedBy(5 seconds))).protocols(httpProtocol)
 }
