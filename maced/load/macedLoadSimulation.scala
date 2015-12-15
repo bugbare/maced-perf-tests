@@ -1,6 +1,7 @@
 package maced.load
 
 import scala.concurrent.duration._
+import scala.util.Random
 
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._
@@ -8,11 +9,13 @@ import io.gatling.jdbc.Predef._
 
 class macedLoadSimulation extends Simulation {
 
+
 	val httpProtocol = http
 		.baseURL("https://registration-uat.ws.macmillaneducation.com")
 		.acceptHeader("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 		.acceptLanguageHeader("en-US,en;q=0.5")
     	.acceptEncodingHeader("gzip, deflate")
+    	//.userAgentHeader("${agent}")
     	.userAgentHeader("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:42.0) Gecko/20100101 Firefox/42.0")
 		.inferHtmlResources(BlackList(""".*\.js""", """.*\.css""", """.*\.gif""", """.*\.jpeg""", """.*\.jpg""", """.*\.ico""", """.*\.woff""", """.*\.(t|o)tf""", """.*\.png"""), WhiteList())
 
@@ -22,7 +25,8 @@ class macedLoadSimulation extends Simulation {
 	object GoHome {
 		val goHome = group("Home") {
 			exec(http("Go to the Home Page")
-			.get(uri1 + "/"))
+			.get(uri1 + "/")
+			.headers(headersAgent.headers_agent))
 			.pause(minWait, maxWait)
 		}
 	}
@@ -155,6 +159,15 @@ class macedLoadSimulation extends Simulation {
 		"Cookie" -> "MEC_WS_SESSIONID=${MEC_WS_SESSIONID}; USERPASS=${USERPASS}; MEE_OAUTH=${MEE_OAUTH}"
 		)
 
+    object headersAgent {
+
+    	var agentArray = Array("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:42.0) Gecko/20100101 Firefox/42.0",
+					    		"Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1",
+					    		"Mozilla/5.0 (X11; Linux i586; rv:31.0) Gecko/20100101 Firefox/31.0")
+    	var agent = Random.shuffle(agentArray.toList).head
+    	val headers_agent = Map("User-Agent" -> agent)
+    }
+
     val uri1 = "http://skillful-uat.macmillan.education"
     val uri2 = "https://mee-uat-dataservices-subscription.ws.macmillaneducation.com/Svc/Subscription"
     val uri3 = "http://rdc-uat.macmillan.education"
@@ -181,10 +194,10 @@ class macedLoadSimulation extends Simulation {
 		viewResources.inject(atOnceUsers(3)),
 		loginAndView.inject(atOnceUsers(3))
 		).protocols(httpProtocol)*/
-	setUp(
+	/*setUp(
 		viewResources.inject(splitUsers(200) into (rampUsers(15) over (5 seconds)) separatedBy(20 seconds)),
 		loginAndView.inject(splitUsers(100) into (rampUsers(10) over (5 seconds)) separatedBy(10 seconds))
-		).protocols(httpProtocol)
+		).protocols(httpProtocol)*/
 	
-	//setUp(loginAndView.inject(splitUsers(100) into (rampUsers(10) over (5 seconds)) separatedBy(5 seconds))).protocols(httpProtocol)
+	setUp(loginAndView.inject(splitUsers(3) into (rampUsers(1) over (1 seconds)) separatedBy(5 seconds))).protocols(httpProtocol)
 }
