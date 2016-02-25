@@ -15,8 +15,9 @@ class macedLoadSimulation extends Simulation {
 		.acceptHeader("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 		.acceptLanguageHeader("en-US,en;q=0.5")
     	.acceptEncodingHeader("gzip, deflate")
+    	.headers(HeadersAgent.headers_agent)
     	//.userAgentHeader("${agent}")
-    	.userAgentHeader("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:42.0) Gecko/20100101 Firefox/42.0")
+    	//.userAgentHeader("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:42.0) Gecko/20100101 Firefox/42.0")
 		.inferHtmlResources(BlackList(""".*\.js""", """.*\.css""", """.*\.gif""", """.*\.jpeg""", """.*\.jpg""", """.*\.ico""", """.*\.woff""", """.*\.(t|o)tf""", """.*\.png"""), WhiteList())
 
 	val minWait = 3
@@ -26,7 +27,7 @@ class macedLoadSimulation extends Simulation {
 		val goHome = group("Home") {
 			exec(http("Go to the Home Page")
 			.get(uri1 + "/")
-			.headers(headersAgent.headers_agent))
+			)
 			.pause(minWait, maxWait)
 		}
 	}
@@ -159,7 +160,7 @@ class macedLoadSimulation extends Simulation {
 		"Cookie" -> "MEC_WS_SESSIONID=${MEC_WS_SESSIONID}; USERPASS=${USERPASS}; MEE_OAUTH=${MEE_OAUTH}"
 		)
 
-    object headersAgent {
+    object HeadersAgent {
 
     	var agentArray = Array("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:42.0) Gecko/20100101 Firefox/42.0",
 					    		"Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1",
@@ -199,5 +200,5 @@ class macedLoadSimulation extends Simulation {
 		loginAndView.inject(splitUsers(100) into (rampUsers(10) over (5 seconds)) separatedBy(10 seconds))
 		).protocols(httpProtocol)*/
 	
-	setUp(loginAndView.inject(splitUsers(3) into (rampUsers(1) over (1 seconds)) separatedBy(5 seconds))).protocols(httpProtocol)
+	setUp(loginAndView.inject(splitUsers(12) into (rampUsers(1) over (1 seconds)) separatedBy(5 seconds))).protocols(httpProtocol)
 }
