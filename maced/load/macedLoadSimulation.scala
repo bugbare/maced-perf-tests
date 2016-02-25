@@ -191,14 +191,14 @@ class macedLoadSimulation extends Simulation {
 		//.exec(GoToResourcesPage.getResources)
 
 
-	/*setUp(
+	setUp(
 		viewResources.inject(atOnceUsers(3)),
 		loginAndView.inject(atOnceUsers(3))
-		).protocols(httpProtocol)*/
+		).protocols(httpProtocol)
 	/*setUp(
 		viewResources.inject(splitUsers(200) into (rampUsers(15) over (5 seconds)) separatedBy(20 seconds)),
 		loginAndView.inject(splitUsers(100) into (rampUsers(10) over (5 seconds)) separatedBy(10 seconds))
 		).protocols(httpProtocol)*/
 	
-	setUp(loginAndView.inject(splitUsers(12) into (rampUsers(1) over (1 seconds)) separatedBy(5 seconds))).protocols(httpProtocol)
+	//setUp(loginAndView.inject(splitUsers(12) into (rampUsers(1) over (1 seconds)) separatedBy(5 seconds))).protocols(httpProtocol)
 }
